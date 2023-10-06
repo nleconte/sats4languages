@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>User Profile</title>
+</head>
+<body>
+<h2>Your Profile</h2>
+<form method="post">
+    Username: <input type="text" name="username" value="{{ user.username }}" required><br>
+    Email: <input type="email" name="email" value="{{ user.email }}" required><br>
+    <input type="submit" value="Update Profile">
+</form>
+</body>
+</html>
+

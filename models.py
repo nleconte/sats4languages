@@ -1,31 +1,29 @@
-from flask_sqlalchemy import SQLAlchemy
-from werkzeug.security import generate_password_hash, check_password_hash
 
 from datetime import datetime
-from app import db
+from extensions import db
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_login import UserMixin
 
-class User(db.Model):
+
+
+class User(db.Model, UserMixin):
+    __tablename__ = 'user'
+
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(64), index=True, unique=True)
-    email = db.Column(db.String(120), index=True, unique=True)
+    username = db.Column(db.String(64), unique=True, index=True)
+    email = db.Column(db.String(120), unique=True, index=True)
     password_hash = db.Column(db.String(128))
     is_teacher = db.Column(db.Boolean, default=False)
-    schedules = db.relationship('Schedule', backref='user', lazy='dynamic')
-
-class Schedule(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    start_time = db.Column(db.DateTime, index=True, default=datetime.utcnow)
-    end_time = db.Column(db.DateTime, index=True, default=datetime.utcnow)
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(64), unique=True, nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password_hash = db.Column(db.String(128))
-    role = db.Column(db.String(20), nullable=False)  # 'teacher' or 'student'
-    # Add any other fields you deem necessary
+    schedules = db.relationship('Schedule', backref='teacher', lazy='dynamic')
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+
+class Schedule(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    available_date = db.Column(db.DateTime, default=datetime.utcnow)
+    teacher_id = db.Column(db.Integer, db.ForeignKey('user.id'))
