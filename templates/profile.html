@@ -1,15 +1,30 @@
+<!-- profile.html -->
 <!DOCTYPE html>
 <html>
 <head>
-    <title>User Profile</title>
+    <title>Profile</title>
+    <!-- You can add CSS links here if using Bootstrap or TailwindCSS -->
 </head>
 <body>
-<h2>Your Profile</h2>
-<form method="post">
-    Username: <input type="text" name="username" value="{{ user.username }}" required><br>
-    Email: <input type="email" name="email" value="{{ user.email }}" required><br>
-    <input type="submit" value="Update Profile">
-</form>
+    <h1>Welcome, {{ current_user.username }}!</h1>
+    <p>Email: {{ current_user.email }}</p>
+
+    <h2>Your Profile</h2>
+    <!-- Add functionality here for users to update their profile details, upload an image, etc. -->
+
+    <h2>Your Scheduled Lessons</h2>
+    {% if scheduled_lessons_count > 0 %}
+
+    <ul>
+        {% for lesson in current_user.schedules.filter_by(student_id=current_user.id).all() %}
+            <li>Date: {{ lesson.available_date.strftime('%Y-%m-%d') }} with Teacher: {{ lesson.teacher.username }}</li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p>You have no scheduled lessons. <a href="{{ url_for('schedule') }}">Schedule one now!</a></p>
+    {% endif %}
+
+    <!-- You can add a footer, navigation bar, or any other elements you see fit for your application. -->
 </body>
 </html>
 

@@ -72,30 +72,39 @@ def profile():
         flash('Profile updated successfully!')
         return redirect(url_for('profile'))
     
-    return render_template('profile.html', user=user)
+    scheduled_lessons_count = len([lesson for lesson in current_user.scheduled_lessons_as_student if lesson.student_id == current_user.id])
+    return render_template('profile.html', user=user, scheduled_lessons_count=scheduled_lessons_count)
 
 from datetime import datetime
 
 @app.route('/schedule', methods=['GET', 'POST'])
+@login_required
 def schedule():
-    user_id = session.get('user_id')
-    if not user_id:
-        flash('Please login first!')
-        return redirect(url_for('login'))
-    
+    user_id = current_user.id # Using flask-login's current_user
+
     if request.method == 'POST':
         date_str = request.form.get('date')
         date_obj = datetime.strptime(date_str, '%Y-%m-%d')
         
-        schedule = Schedule(available_date=date_obj, teacher_id=user_id)
-        
-        db.session.add(schedule)
+        # If a teacher, set availability. If a student, book a lesson.
+        if current_user.is_teacher:
+            schedule = Schedule(available_date=date_obj, teacher_id=user_id)
+            db.session.add(schedule)
+            flash('Availability set successfully!')
+        else:
+            teacher_id = request.form.get('teacher_id')  
+            available_schedule = Schedule.query.filter_by(available_date=date_obj, teacher_id=teacher_id, student_id=None).first()
+            if available_schedule:
+                available_schedule.student_id = user_id
+                flash('Lesson booked successfully!')
+            else:
+                flash('Sorry, this slot is not available.')
+                
         db.session.commit()
-        
-        flash('Lesson scheduled successfully!')
-        return redirect(url_for('schedule'))
+        return redirect(url_for('profile'))
     
     return render_template('schedule.html')
+
 
 @login_manager.user_loader
 def load_user(user_id):
