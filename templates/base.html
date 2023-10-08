@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sats 4 Languages</title>
+    
+    <!-- Link to the TailwindCSS output file -->
+    <link href="{{ url_for('static', filename='output.css') }}" rel="stylesheet">
+    
+    <!-- Additional CSS files or meta tags can go here -->
+
+</head>
+<body class="bg-gray-100">
+
+<!-- Optional navigation bar -->
+<nav class="bg-white p-4 shadow-md">
+    <div class="container mx-auto">
+        <h1 class="text-xl font-bold">Sats 4 Languages</h1>
+        <!-- Other nav items can go here -->
+    </div>
+</nav>
+
+<!-- Main content block -->
+<main class="container mx-auto mt-10">
+    {% block content %}{% endblock %}
+</main>
+
+<!-- Optional footer -->
+<footer class="bg-white p-4 mt-10 shadow-md">
+    <div class="container mx-auto text-center">
+        © 2023 Sats 4 Languages. All rights reserved.
+    </div>
+</footer>
+
+<!-- Additional JS scripts can be linked at the end -->
+
+</body>
+</html>
+

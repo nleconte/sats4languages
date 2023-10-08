@@ -1,30 +1,32 @@
-<!-- profile.html -->
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Profile</title>
-    <!-- You can add CSS links here if using Bootstrap or TailwindCSS -->
-</head>
-<body>
-    <h1>Welcome, {{ current_user.username }}!</h1>
-    <p>Email: {{ current_user.email }}</p>
+{% extends "base.html" %}
 
-    <h2>Your Profile</h2>
-    <!-- Add functionality here for users to update their profile details, upload an image, etc. -->
 
-    <h2>Your Scheduled Lessons</h2>
-    {% if scheduled_lessons_count > 0 %}
+{% block title %}Profile Page{% endblock %}
 
-    <ul>
-        {% for lesson in current_user.schedules.filter_by(student_id=current_user.id).all() %}
-            <li>Date: {{ lesson.available_date.strftime('%Y-%m-%d') }} with Teacher: {{ lesson.teacher.username }}</li>
-        {% endfor %}
-    </ul>
-    {% else %}
-    <p>You have no scheduled lessons. <a href="{{ url_for('schedule') }}">Schedule one now!</a></p>
-    {% endif %}
+{% block content %}
+<div class="max-w-sm mx-auto mt-10 bg-white p-6 rounded-xl shadow-md space-y-4">
+    <div class="text-center space-y-2">
+        <div class="flex justify-center">
+            <!-- Placeholder for the user's image. You can replace with your actual image logic -->
+            <img class="h-24 w-24 rounded-full" src="{{ user.image or url_for('static', filename='default_profile.jpg') }}" alt="{{ user.username }}">
 
-    <!-- You can add a footer, navigation bar, or any other elements you see fit for your application. -->
-</body>
-</html>
+        </div>
+        <div class="text-xl font-bold">{{ user.username }}</div>
+        <div class="text-gray-600">{{ user.email }}</div>
+    </div>
+
+    <div>
+        <h2 class="text-xl font-bold">Your Scheduled Lessons</h2>
+        {% if scheduled_lessons_count > 0 %}
+            <ul class="list-disc pl-5 space-y-2">
+                {% for lesson in current_user.scheduled_lessons_as_student %}
+                    <li>{{ lesson.available_date.strftime('%Y-%m-%d %H:%M') }}</li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="text-gray-600 mt-2">You have no scheduled lessons. <a href="{{ url_for('schedule') }}" class="text-blue-500 hover:underline">Schedule one now!</a></p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
 

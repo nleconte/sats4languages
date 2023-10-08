@@ -25,20 +25,22 @@ migrate.init_app(app, db)
 def index():
     return "Hello, World!"
 
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
         username = request.form.get('username')
         email = request.form.get('email')
         password = request.form.get('password')
-        
+        is_teacher = True if request.form.get('is_teacher') == 'true' else False  # Handle the checkbox
+
         # Check if user already exists
         user = User.query.filter_by(email=email).first()
         if user:
             flash('Email address already exists')
             return redirect(url_for('register'))
         
-        new_user = User(username=username, email=email, is_teacher=False)
+        new_user = User(username=username, email=email, is_teacher=is_teacher)  # Use the is_teacher variable
         new_user.set_password(password)
         
         db.session.add(new_user)
@@ -52,12 +54,7 @@ def register():
 @app.route('/profile', methods=['GET', 'POST'])
 @login_required
 def profile():
-    user_id = session.get('user_id')
-    if not user_id:
-        flash('Please login first!')
-        return redirect(url_for('login'))
-    
-    user = User.query.get(user_id)
+    user = current_user
     if request.method == 'POST':
         # Get updated data
         username = request.form.get('username')

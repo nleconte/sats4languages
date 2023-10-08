@@ -30,4 +30,4 @@ class Schedule(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     available_date = db.Column(db.DateTime, default=datetime.utcnow)
     student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
-    teacher_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    teacher_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
