@@ -69,7 +69,7 @@ def profile():
         flash('Profile updated successfully!')
         return redirect(url_for('profile'))
     
-    scheduled_lessons_count = len([lesson for lesson in current_user.scheduled_lessons_as_student if lesson.student_id == current_user.id])
+    scheduled_lessons_count = len(current_user.scheduled_lessons_as_student)
     return render_template('profile.html', user=user, scheduled_lessons_count=scheduled_lessons_count)
 
 from datetime import datetime
@@ -82,7 +82,7 @@ def schedule():
     if request.method == 'POST':
         date_str = request.form.get('date')
         date_obj = datetime.strptime(date_str, '%Y-%m-%d')
-        
+
         # If a teacher, set availability. If a student, book a lesson.
         if current_user.is_teacher:
             schedule = Schedule(available_date=date_obj, teacher_id=user_id)
@@ -99,9 +99,9 @@ def schedule():
                 
         db.session.commit()
         return redirect(url_for('profile'))
-    
-    return render_template('schedule.html')
 
+    teachers = User.query.filter_by(is_teacher=True).all()
+    return render_template('schedule.html', teachers=teachers)
 
 @login_manager.user_loader
 def load_user(user_id):

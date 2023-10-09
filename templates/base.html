@@ -11,23 +11,30 @@
     <!-- Additional CSS files or meta tags can go here -->
 
 </head>
-<body class="bg-gray-100">
+<body class="bg-gray-100 font-sans antialiased">
+
+<!-- base.html -->
 
 <!-- Optional navigation bar -->
 <nav class="bg-white p-4 shadow-md">
-    <div class="container mx-auto">
+    <div class="container mx-auto flex justify-between items-center">
         <h1 class="text-xl font-bold">Sats 4 Languages</h1>
-        <!-- Other nav items can go here -->
+        
+        <!-- Checking if the user is authenticated to show the Logout button -->
+        {% if current_user.is_authenticated %}
+            <a href="{{ url_for('logout') }}" class="bg-red-500 hover:bg-red-600 text-white py-1 px-4 rounded">Logout</a>
+        {% endif %}
     </div>
 </nav>
 
+
 <!-- Main content block -->
-<main class="container mx-auto mt-10">
+<main class="container mx-auto mt-10 p-4">
     {% block content %}{% endblock %}
 </main>
 
 <!-- Optional footer -->
-<footer class="bg-white p-4 mt-10 shadow-md">
+<footer class="bg-blue-500 p-4 mt-10 shadow-md text-white">
     <div class="container mx-auto text-center">
         © 2023 Sats 4 Languages. All rights reserved.
     </div>

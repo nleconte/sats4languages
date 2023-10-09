@@ -1,13 +1,32 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Schedule Lesson</title>
-</head>
-<body>
-<h2>Schedule a Lesson</h2>
-<form method="post">
-    Date: <input type="date" name="date" required><br>
-    <input type="submit" value="Schedule Lesson">
-</form>
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="max-w-lg mx-auto bg-white p-6 rounded-xl shadow-md space-y-6">
+    <h2 class="text-2xl font-bold text-center mb-4">Schedule a Lesson</h2>
+
+    <form method="post" class="space-y-4">
+        <div>
+            <label for="date" class="block text-sm font-medium text-gray-700">Date:</label>
+            <input type="date" name="date" id="date" required class="mt-2 p-2 w-full border rounded-md">
+        </div>
+
+        {% if not current_user.is_teacher %}
+            <div>
+                <label for="teacher_id" class="block text-sm font-medium text-gray-700">Choose a Teacher:</label>
+                <select name="teacher_id" id="teacher_id" required class="mt-2 p-2 w-full border rounded-md">
+                    {% for teacher in teachers %}
+                        <option value="{{ teacher.id }}">{{ teacher.username }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        {% endif %}
+
+        <div>
+            <input type="submit" value="Schedule Lesson" class="w-full bg-blue-500 hover:bg-blue-700 text-white p-2 rounded-md">
+        </div>
+    </form>
+</div>
+
+{% endblock %}
+
