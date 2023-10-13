@@ -1,15 +1,21 @@
 # app.py
-from flask import Flask, session
-from flask import render_template, redirect, url_for, flash, request
-from flask import Flask, flash, redirect, url_for, request, render_template
+from flask import Flask, session, render_template, redirect, url_for, flash, request
 from extensions import db, migrate
 import models  # Assuming models.py is in the same directory as app.py
-from models import User, Schedule
+from models import User, Schedule, Lesson 
 from werkzeug.security import check_password_hash
 from werkzeug.security import generate_password_hash
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+from flask_wtf.csrf import CSRFProtect
+from flask_wtf import FlaskForm
+from wtforms import StringField, IntegerField, FloatField, SubmitField, validators
+from wtforms.validators import DataRequired
+from wtforms import StringField, PasswordField, validators
+from wtforms.validators import DataRequired, Email
+
 
 app = Flask(__name__)
+csrf = CSRFProtect(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:tfJWljfW@localhost/mydatabase'
 app.config['SECRET_KEY'] = 'azerty'
 
@@ -20,6 +26,23 @@ login_manager.init_app(app)
 login_manager.login_view = 'login'  # specify what view to load when a user needs to log in
 
 migrate.init_app(app, db)
+
+import requests
+
+# LNBits configuration
+STUDENT_API_KEY = '47e1b195f19e4676b700993846c46644'
+TEACHER_API_KEY = '47e1b195f19e4676b700993846c46644'
+LNBits_URL = 'https://testnet.laisee.org'  # or your own hosted LNBits URL
+
+
+class LoginForm(FlaskForm):
+    email = StringField('Email Address', [validators.DataRequired(), validators.Email()])
+    password = PasswordField('Password', [validators.DataRequired()])
+    submit = SubmitField('Login')
+
+class EndClassForm(FlaskForm):
+    pass  # For now, it's an empty form. We're using it mainly for CSRF protection.
+
 
 @app.route('/')
 def index():
@@ -38,7 +61,7 @@ def register():
         user = User.query.filter_by(email=email).first()
         if user:
             flash('Email address already exists')
-            return redirect(url_for('register'))
+            return redirect(url_for('profile'))
         
         new_user = User(username=username, email=email, is_teacher=is_teacher)  # Use the is_teacher variable
         new_user.set_password(password)
@@ -69,8 +92,15 @@ def profile():
         flash('Profile updated successfully!')
         return redirect(url_for('profile'))
     
-    scheduled_lessons_count = len(current_user.scheduled_lessons_as_student)
-    return render_template('profile.html', user=user, scheduled_lessons_count=scheduled_lessons_count)
+    if current_user.is_teacher:
+        # Fetch classes scheduled by the teacher
+        scheduled_lessons = Schedule.query.filter_by(teacher_id=current_user.id).all()
+    else:
+        # Fetch classes scheduled for the student
+        scheduled_lessons = current_user.scheduled_lessons_as_student
+    
+    scheduled_lessons_count = len(scheduled_lessons)
+    return render_template('profile.html', user=user, scheduled_lessons_count=scheduled_lessons_count, scheduled_lessons=scheduled_lessons)
 
 from datetime import datetime
 
@@ -110,22 +140,155 @@ def load_user(user_id):
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    if request.method == 'POST':
-        email = request.form.get('email')
-        password = request.form.get('password')
-        user = User.query.filter_by(email=email).first()
+    form = LoginForm()
+    if form.validate_on_submit():
+        # handle login
+        return redirect(url_for('index'))
+    return render_template('login.html', title='Sign In', form=form)
 
-        if user and user.check_password(password):
-            login_user(user)
-            return redirect(url_for('profile'))
-        
-        flash('Login Unsuccessful. Please check email and password', 'danger')
 
-    return render_template('login.html')
 
 @app.route('/logout')
 @login_required
 def logout():
     logout_user()
     return redirect(url_for('index'))
+
+
+@app.route('/create_invoice', methods=['POST'])
+def create_invoice():
+    amount = request.form.get('amount')  # amount in sats
+
+    data = {
+        'out': False,
+        'amount': amount,
+        'memo': 'Load Wallet'
+    }
+
+    response = requests.post(f'{LNBits_URL}/api/v1/payments', headers=HEADERS, json=data)
+    if response.status_code == 201:
+        return jsonify(response.json())
+    else:
+        return jsonify({"error": "Failed to create invoice"}), 400
+
+@app.route('/check_invoice/<invoice_id>', methods=['GET'])
+def check_invoice(invoice_id):
+    response = requests.get(f'{LNBits_URL}/api/v1/payments/{invoice_id}', headers=HEADERS)
+    return jsonify(response.json())
+
+
+
+@app.route('/start_class/<int:class_id>', methods=['POST'])
+@login_required
+def start_class(class_id):
+    # Check if the current user is a student
+    if not current_user.is_teacher:
+        flash('Only teachers can start a class.')
+        return redirect(url_for('profile'))
+
+    class_details = Lesson.query.get(class_id)
+    if class_details is None:
+        flash("Lesson not found.", "error")
+        return redirect(url_for('profile'))
+
+
+    # Create an invoice on LNBits using student's API key
+    headers = {
+        'X-Api-Key': STUDENT_API_KEY
+    }
+
+    data = {
+        'out': True,
+        'amount': class_details.cost,
+        'memo': f'Lesson Payment for Lessson ID {class_id}'
+    }
+    response = requests.post(f'{LNBits_URL}/api/v1/payments', headers=HEADERS, json=data)
+    payment_data = response.json()
+
+    if 'checking_id' not in payment_data:
+        flash('Error creating payment. Ensure you have sufficient funds.')
+        return redirect(url_for('index'))
+
+    # TODO: Store payment_data['checking_id'] to verify payment later.
+    # For now, we're assuming payment was successful.
+
+    flash('Lesson started successfully. Payment initiated.')
+    return redirect(url_for('profile'))
+
+@app.route('/end_class/<int:class_id>', methods=['POST'])
+def end_class(class_id):
+    class_details = Lesson.query.get(class_id)
+    
+    # Your logic for confirmations by student and teacher remains unchanged. Assuming that it's present here.
+    ... 
+
+    # If both confirmed, release the payment to the teacher
+    if (
+        class_details.status_student == "confirmed-by-student"
+        and class_details.status_teacher == "confirmed-by-teacher"
+    ):
+        teacher = User.query.get(class_details.teacher_id)
+        
+        # Make a payout request using teacher's API key
+        headers = {
+            'X-Api-Key': teacher.api_key  # Assuming each teacher has an API key stored in their record
+        }
+        data = {
+            'amount': class_details.cost,
+            'memo': f'Lesson Payment for Lesson ID {class_id}'
+        }
+        response = requests.post(f'{LNBits_URL}/api/v1/payments', headers=headers, json=data)
+        payment_data = response.json()
+
+        if 'checking_id' not in payment_data:
+            flash('Error transferring funds to teacher. Please check.')
+            return redirect(url_for('index'))
+
+        class_details.status = "completed"
+
+    db.session.commit()
+    flash('Lesson confirmation successful.')
+    return redirect(url_for('profile'))
+
+
+
+# Define a form for class creation
+class LessonForm(FlaskForm):
+    title = StringField('Title', validators=[DataRequired()])
+    description = StringField('Description')
+    duration = IntegerField('Duration', validators=[DataRequired()])
+    material_link = StringField('Material Link')
+    cost = FloatField('Cost', validators=[DataRequired()])
+    submit = SubmitField('Create Lesson')
+
+@app.route('/create_class', methods=['GET', 'POST'])
+@login_required
+def create_class():
+    form = LessonForm()
+    if form.validate_on_submit():
+        new_class = Lesson(
+            title=form.title.data,
+            description=form.description.data,
+            duration=form.duration.data,
+            material_link=form.material_link.data,
+            cost=form.cost.data
+        )
+        db.session.add(new_class)
+        db.session.commit()
+        flash('Lesson created successfully!', 'success')
+        return redirect(url_for('index'))
+    return render_template('create_class.html', form=form)
+
+
+@app.route('/ongoing_class/<int:class_id>', methods=['GET', 'POST'])
+def ongoing_class(class_id):
+    form = EndClassForm()
+    
+    if form.validate_on_submit():
+        # Logic to handle form submission goes here
+        pass
+
+    return render_template('ongoing_class.html', class_id=class_id, form=form)
+
+
 

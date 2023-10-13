@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>Create a New Class</h1>
+<form method="post">
+    {{ form.hidden_tag() }}
+    <div>
+        {{ form.title.label }}<br>
+        {{ form.title() }}
+    </div>
+    <!-- Repeat for other fields -->
+    <div>
+        {{ form.submit() }}
+    </div>
+</form>
+{% endblock %}
+

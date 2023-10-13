@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ongoing Class</title>
+</head>
+<body>
+    <h1>Welcome to Class #{{ class_id }}</h1>
+    <p>This is your ongoing class. Enjoy the session!</p>
+    
+    <!-- Form to end class and release funds -->
+    <form method="post" action="{{ url_for('end_class', class_id=class_id) }}">
+        {{ form.hidden_tag() }}  <!-- Include CSRF token -->
+        <input type="submit" value="Finish Class & Release Funds">
+    </form>
+
+    <!-- Add any additional content or functionality as needed -->
+</body>
+</html>

@@ -1,6 +1,5 @@
 {% extends "base.html" %}
 
-
 {% block title %}Profile Page{% endblock %}
 
 {% block content %}
@@ -9,7 +8,6 @@
         <div class="flex justify-center">
             <!-- Placeholder for the user's image. You can replace with your actual image logic -->
             <img class="h-24 w-24 rounded-full" src="{{ user.image or url_for('static', filename='default_profile.jpg') }}" alt="{{ user.username }}">
-
         </div>
         <div class="text-xl font-bold">{{ user.username }}</div>
         <div class="text-gray-600">{{ user.email }}</div>
@@ -19,9 +17,24 @@
         <h2 class="text-xl font-bold">Your Scheduled Lessons</h2>
         {% if scheduled_lessons_count > 0 %}
             <ul class="list-disc pl-5 space-y-2">
-                {% for lesson in current_user.scheduled_lessons_as_student %}
-                    <li>{{ lesson.available_date.strftime('%Y-%m-%d %H:%M') }}</li>
-                {% endfor %}
+            {% for lesson in scheduled_lessons %}
+                <li>
+                    {{ lesson.available_date.strftime('%Y-%m-%d %H:%M') }}
+                    {% if user.is_teacher %}
+                        <!-- Display information specific to the teacher. E.g., the student's name if the lesson is booked. -->
+                        {% if lesson.student_id %}
+                            - Booked by: {{ lesson.student.name }}
+                        {% else %}
+                            - Available
+                        {% endif %}
+                    {% endif %}
+                    <!-- Show Start Class button for both teachers and students -->
+                    <form action="{{ url_for('ongoing_class', class_id=lesson.id) }}" method="post" class="inline-block ml-2">
+                        <button type="submit" class="text-blue-500 hover:text-blue-700 hover:underline">Start Class</button>
+                    </form>
+                </li>
+            {% endfor %}
+
             </ul>
         {% else %}
             <p class="text-gray-600 mt-2">You have no scheduled lessons. <a href="{{ url_for('schedule') }}" class="text-blue-500 hover:underline">Schedule one now!</a></p>
