@@ -8,7 +8,7 @@ from werkzeug.security import generate_password_hash
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from flask_wtf.csrf import CSRFProtect
 from flask_wtf import FlaskForm
-from wtforms import StringField, IntegerField, FloatField, SubmitField, validators
+from wtforms import StringField, IntegerField, FloatField, SubmitField, validators, BooleanField
 from wtforms.validators import DataRequired
 from wtforms import StringField, PasswordField, validators
 from wtforms.validators import DataRequired, Email
@@ -39,6 +39,7 @@ class LoginForm(FlaskForm):
     email = StringField('Email Address', [validators.DataRequired(), validators.Email()])
     password = PasswordField('Password', [validators.DataRequired()])
     submit = SubmitField('Login')
+    remember_me = BooleanField('Remember Me')
 
 class EndClassForm(FlaskForm):
     pass  # For now, it's an empty form. We're using it mainly for CSRF protection.
@@ -140,10 +141,18 @@ def load_user(user_id):
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))  # Already logged in
     form = LoginForm()
     if form.validate_on_submit():
-        # handle login
-        return redirect(url_for('index'))
+        user = User.query.filter_by(email=form.email.data).first()
+        if user and user.check_password(form.password.data):  # Assuming you have a method called check_password in your User model
+            login_user(user, remember=form.remember_me.data)
+            next_page = request.args.get('next')
+            if not next_page or url_parse(next_page).netloc != '':
+                next_page = url_for('index')
+            return redirect(next_page)
+        flash('Invalid username or password')
     return render_template('login.html', title='Sign In', form=form)
 
 
@@ -152,7 +161,7 @@ def login():
 @login_required
 def logout():
     logout_user()
-    return redirect(url_for('index'))
+    return redirect(url_for('login'))
 
 
 @app.route('/create_invoice', methods=['POST'])
@@ -217,10 +226,10 @@ def start_class(class_id):
 
 @app.route('/end_class/<int:class_id>', methods=['POST'])
 def end_class(class_id):
-    class_details = Lesson.query.get(class_id)
+    class_details = Schedule.query.get(class_id)
     
-    # Your logic for confirmations by student and teacher remains unchanged. Assuming that it's present here.
-    ... 
+    if not class_details:
+        return jsonify({'message': 'Class not found'}), 404
 
     # If both confirmed, release the payment to the teacher
     if (

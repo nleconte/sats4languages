@@ -33,6 +33,8 @@ class Schedule(db.Model):
     available_date = db.Column(db.DateTime, default=datetime.utcnow, index=True)  # Index this as it may be frequently queried
     student_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     teacher_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    status_student = db.Column(db.String(255))
+    status_teacher = db.Column(db.String(255))
 
 
 class TransactionStatus(Enum):

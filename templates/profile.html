@@ -30,6 +30,7 @@
                     {% endif %}
                     <!-- Show Start Class button for both teachers and students -->
                     <form action="{{ url_for('ongoing_class', class_id=lesson.id) }}" method="post" class="inline-block ml-2">
+                        {{ form.hidden_tag() }}
                         <button type="submit" class="text-blue-500 hover:text-blue-700 hover:underline">Start Class</button>
                     </form>
                 </li>
